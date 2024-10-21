@@ -1,0 +1,83 @@
+﻿
+
+
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+
+button {
+    border-radius: 7px;
+    background-color: #E9987D;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+    button:hover {
+        background-color: #c87458;
+        transform: scale(1.05);
+    }
+
+    button:active {
+        transform: scale(0.95);
+        background-color: #f0bba9;
+    }
+
+
+input {
+    border-radius: 7px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #a6c9cb;
+    margin-bottom: 10px;
+}
+
+.register-container {
+    display: grid;
+    place-items: center; /* Wyśrodkowanie w pionie i poziomie */
+    height: 80vh; /* Ustawienie wysokości kontenera na 100% wysokości okna */
+    width: 90vw; /* Ustawienie szerokości na 100% szerokości okna */
+}
+
+/* Formularz */
+.right-section {
+    background-color: #554141;
+    color: #fff;
+    padding: 50px; /* Zmniejszenie paddingu, aby formularz był bardziej kompaktowy */
+    border-radius: 20px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Delikatny cień dla estetyki */
+    text-align: center; /* Wyśrodkowanie tekstu */
+    max-width: 500px; /* Opcjonalnie maksymalna szerokość formularza */
+    width: 100%; /* Formularz będzie zajmował całą dostępną szerokość do max-width */
+}
+
+
+.right-section {
+    flex: 1;
+    margin: 10px;
+    background-color: #554141;
+    color: #fff;
+    padding: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-radius: 20px;
+}
+
+
+.validation-summary-errors ul {
+    margin: 0;
+    list-style-type: none;
+    padding: 0;
+}
+
+
+
+.error-message {
+    margin-top: 20px;
+}

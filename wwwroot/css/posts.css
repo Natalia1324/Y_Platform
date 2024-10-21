@@ -1,0 +1,107 @@
+﻿/* Styl ogólny */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #393033; /* Spójny kolor tła */
+    color: #E9987D; /* Spójny kolor tekstu */
+}
+
+/* Kontener na treść, rozciągający się na całą szerokość */
+.content-wrapper {
+    width: 80vw;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Nagłówki */
+h2, h3 {
+    text-align: center;
+    color: #E9987D; /* Spójny kolor nagłówków */
+}
+
+/* Formularz do dodawania postów */
+.post-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80vw;
+    margin: 20px 0;
+}
+
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80vw;
+}
+
+
+textarea.form-control {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    background-color: #fff; /* Kontrastowy kolor tła */
+    color: #000; /* Kolor tekstu wewnątrz */
+}
+
+/* Przycisk wysyłania postów */
+button {
+    border-radius: 7px;
+    background-color: #E9987D;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+    button:hover {
+        background-color: #c87458;
+        transform: scale(1.05);
+    }
+
+    button:active {
+        transform: scale(0.95);
+        background-color: #f0bba9;
+    }
+
+/* Lista postów */
+ul.list-group {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
+    width: 100%;
+}
+
+/* Pojedynczy post */
+.list-group-item {
+    background-color: #2c2727; /* Tło dla postów */
+    margin: 10px 0;
+    padding: 20px;
+    border-radius: 10px;
+    color: #E9987D; /* Kolor tekstu w postach */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Delikatny cień */
+    width: 100%; /* Zajmuje całą szerokość kontenera */
+}
+
+    /* Styl dla nicków */
+    .list-group-item strong {
+        color: #fff; /* Biały kolor dla nazw użytkowników */
+    }
+
+    /* Styl dla tekstu postów */
+    .list-group-item p {
+        margin: 10px 0;
+        line-height: 1.5;
+    }
+
+        /* Predykcja (wartość zielona/czerwona) */
+        .list-group-item p:last-of-type {
+            font-weight: bold;
+            color: inherit;
+        }

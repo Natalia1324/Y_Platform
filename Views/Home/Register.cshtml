@@ -1,0 +1,76 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@model Y_Platform.Entities.Users
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    
+    <link rel="stylesheet" type="text/css" href="~/css/register.css">
+    
+</head>
+<body>
+    <div class="register-container">
+        <div class="right-section">
+            <h2 style="margin-bottom: 50px;">Create an Account</h2>
+            @using (Html.BeginForm("Register", "Home", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="form-field">
+                    @* @Html.TextBoxFor(model => model.Nick, new { @placeholder = "Nick", @required = "required" }) *@
+                    @Html.TextBoxFor(model => model.Nick, new { @placeholder = "Nick", @required = "required", @minlength = "8", @maxlength = "20" })
+
+                    <!--<label for="nick">Nick</label>-->
+                </div>
+                <br>
+                <div class="form-field">
+                    @Html.TextBoxFor(model => model.Login, new { @placeholder = "Email", @required = "required", @pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}" })
+
+
+
+                    @* @Html.TextBoxFor(model => model.Login, new { @placeholder = "Email", @required = "required" }) *@
+                    <!--<label for="email">Email</label>-->
+                </div>
+                <br>
+                <div class="form-field">
+                   @*  @Html.PasswordFor(model => model.Password, new { @placeholder = "Password", @required = "required", @minlength = "8", @maxlength = "20", @onchange = "validatePassword()" }) *@
+
+                    @Html.PasswordFor(model => model.Password, new { @placeholder = "Password", @required = "required", @minlength = "8", @maxlength = "20" })
+
+
+                    @* @Html.PasswordFor(model => model.Password, new { @placeholder = "Password", @required = "required" }) *@
+                    <!--<label for="password">Password</label>-->
+                </div>
+                <br>
+                <button type="submit">Sign Up</button>
+
+                <br>
+
+                <div class="form-field error-message">
+                    @Html.ValidationSummary()
+                </div>
+            }
+        </div>
+    </div>
+    <script>
+    // function validatePassword() {
+    //     var password = document.getElementById("Password").value;
+            
+    //         // Określenie wzorca do sprawdzenia
+    //         var pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!#$%^&*()-_=+]{8,20}$/;
+
+    //         if (!pattern.test(password)) {
+    //             alert("Password must be 8-20 characters long and include at least one lowercase letter, one uppercase letter, one digit, and one special character.");
+    //             return false;
+    //         }
+    //         return true;
+    // }
+</script>
+</body>
+</html>

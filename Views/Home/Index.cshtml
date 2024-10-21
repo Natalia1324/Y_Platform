@@ -1,0 +1,41 @@
+﻿@model List<Y_Platform.Entities.Post>
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" type="text/css" href="~/css/posts.css">
+</head>
+<body>
+    <div class="content-wrapper">
+        <h2>Welcome to Y</h2>
+
+        <!-- Formularz do dodawania postów -->
+        <form asp-action="AddPost" method="post" class="post-form">
+            <div class="form-group">
+                <textarea name="content" class="form-control" placeholder="What's on your mind?" required></textarea>
+            </div>
+            <button type="submit">Post</button>
+        </form>
+
+        <!-- Wyświetlanie postów -->
+        <h3>Recent Posts</h3>
+        <ul class="list-group">
+            @foreach (var post in Model.OrderByDescending(p => p.CreatedDate))
+            {
+                <li class="list-group-item">
+                    <strong>@post.Users.Nick</strong> (@post.CreatedDate.ToString("g"))
+                    <p>@post.Content</p>
+                    <p style="color: @(post.Prediction < 0.5 ? "green" : "red")">@post.Prediction</p>
+                </li>
+            }
+        </ul>
+    </div>
+</body>
+</html>

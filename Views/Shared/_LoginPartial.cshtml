@@ -1,0 +1,43 @@
+﻿@using Y_Platform.Entities
+
+
+<ul class="navbar-nav">
+    @if (ViewContext.HttpContext.Session.GetObject<Users>("LoggedUser")?.isLogged == true)
+    {
+                                    <li class="nav-item">
+                                        <a class="nav-link text-dark" id="helloMessage">Hello, @(ViewContext.HttpContext.Session.GetObject<Users>("LoggedUser")?.Nick)</a>
+                                    </li>
+                                        <li class="nav-item">
+                                        <a class="nav-link text-dark" id="logoutButton">Logout</a>
+                                    </li>
+
+    }
+    else
+    {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" id="registerButton">Register</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" id="loginButton">Login</a>
+                                </li>
+
+    }
+</ul>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $("#logoutButton").click(function () {
+            $.ajax({
+                type: 'POST',
+                url: '/Home/Logout',
+                success: function (result) {
+                    window.location.href = "/Home/Index";
+                },
+                error: function (error) {
+                    console.error('Logout failed:', error);
+                }
+            });
+        });
+    });
+</script>
