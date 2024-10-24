@@ -4,6 +4,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using Y_Platform.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Y_Platform.Models
 {
@@ -11,14 +13,16 @@ namespace Y_Platform.Models
     {
         private static readonly HttpClient client = new HttpClient();
         private readonly string apiUrl;
+        private ApplicationDbContext _context;
 
-        public AI_API_Client(string apiUrl)
+        public AI_API_Client(string apiUrl, ApplicationDbContext _context)
         {
             this.apiUrl = apiUrl;
+            this._context = _context;
         }
 
         // Klasa do danych wejściowych
-        public class InputData
+        public class InputDataToPrediction
         {
             public int User_ID { get; set; }
             public string User_Name { get; set; }
@@ -26,14 +30,22 @@ namespace Y_Platform.Models
             public DateTime CreatedDate { get; set; }
             public string apiKey { get; set; }  // Klucz autoryzacyjny
         }
-
+        public class PostDataToLearning
+        {
+            public int Id { get; set; }
+            public string Content { get; set; }
+            public DateTime CreatedDate { get; set; }
+            public float? Prediction { get; set; }
+            public int NotOffensive { get; set; }
+            public int Offensive { get; set; }
+            public int UserId { get; set; }  // Przesyłamy tylko ID użytkownika
+        }
         public class Prediction
         {
             public string text { get; set; }         // Tekst
             public int classification { get; set; }  // Klasyfikacja
             public float predictionValue { get; set; } // Wartość predykcji
         }
-
         public class PredictionResponse
         {
             public List<List<object>> predictions { get; set; }
@@ -52,7 +64,7 @@ namespace Y_Platform.Models
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new ArgumentException("API key cannot be empty", nameof(apiKey));
 
-            var input = new InputData
+            var input = new InputDataToPrediction
             {
                 User_ID = userId,
                 User_Name = userName,
@@ -123,5 +135,54 @@ namespace Y_Platform.Models
                 throw;
             }
         }
+
+
+        public async Task SendLearningData(string apiKey)
+        {
+            try
+            {
+                // Pobierz wszystkie posty z bazy danych
+                var posts = await _context.Posts
+                    .Include(p => p.Users)  // Include, aby mieć dostęp do UserId
+                    .ToListAsync();
+
+                foreach (var post in posts)
+                {
+                    var postData = new PostDataToLearning
+                    {
+                        Id = post.Id,
+                        Content = post.Content,
+                        CreatedDate = post.CreatedDate,
+                        Prediction = post.Prediction,
+                        NotOffensive = post.NotOffensive,
+                        Offensive = post.Offensive,
+                        UserId = post.Users.Id  // Przesyłamy ID użytkownika
+                    };
+
+                    var jsonContent = JsonConvert.SerializeObject(postData);
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    // Wyślij dane do API
+                    var response = await client.PostAsync($"{apiUrl}/learn", httpContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"Post {post.Id} sent successfully.");
+                    }
+                    else
+                    {
+                        var errorMessage = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"Failed to send post {post.Id}. Error: {errorMessage}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                throw;
+            }
+        }
     }
+
 }
+

@@ -8,13 +8,14 @@ namespace Y_Platform.Entities
     public class Users
     {
         public int Id { get; set; }
-        public string Nick { get; set; }
-        public string Login { get; set; }
-        public string Password { get; set; }
+        public required string Nick { get; set; }
+        public required string Login { get; set; }
+        public required string Password { get; set; }
 
         // References
-        public List<Post> Posts { get; set; } = new List<Post>();
-     
+        public List<Posts> Posts { get; set; } = new List<Posts>();
+        public List<PostVotes> PostVotes { get; set; } = new List<PostVotes>();
+
         [NotMapped]
         public bool isLogged { get; set; } = false;
     }

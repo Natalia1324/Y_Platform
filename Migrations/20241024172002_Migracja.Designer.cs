@@ -12,8 +12,8 @@ using Y_Platform.Entities;
 namespace Y_Platform.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241018160621_migracja")]
-    partial class migracja
+    [Migration("20241024172002_Migracja")]
+    partial class Migracja
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,33 @@ namespace Y_Platform.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Y_Platform.Entities.Post", b =>
+            modelBuilder.Entity("Y_Platform.Entities.PostVotes", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsOffensive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PostVotes");
+                });
+
+            modelBuilder.Entity("Y_Platform.Entities.Posts", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -39,6 +65,12 @@ namespace Y_Platform.Migrations
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("NotOffensive")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Offensive")
+                        .HasColumnType("int");
 
                     b.Property<float?>("Prediction")
                         .HasColumnType("real");
@@ -78,19 +110,45 @@ namespace Y_Platform.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Y_Platform.Entities.Post", b =>
+            modelBuilder.Entity("Y_Platform.Entities.PostVotes", b =>
+                {
+                    b.HasOne("Y_Platform.Entities.Posts", "Post")
+                        .WithMany("PostVotes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Y_Platform.Entities.Users", "User")
+                        .WithMany("PostVotes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Y_Platform.Entities.Posts", b =>
                 {
                     b.HasOne("Y_Platform.Entities.Users", "Users")
                         .WithMany("Posts")
                         .HasForeignKey("UsersId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("Y_Platform.Entities.Posts", b =>
+                {
+                    b.Navigation("PostVotes");
+                });
+
             modelBuilder.Entity("Y_Platform.Entities.Users", b =>
                 {
+                    b.Navigation("PostVotes");
+
                     b.Navigation("Posts");
                 });
 #pragma warning restore 612, 618

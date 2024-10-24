@@ -1,4 +1,4 @@
-﻿@model List<Y_Platform.Entities.Post>
+﻿@model List<Y_Platform.Models.PostViewModel>
 
 @{
     ViewData["Title"] = "Home";
@@ -16,7 +16,7 @@
     <div class="content-wrapper">
         <h2>Welcome to Y</h2>
 
-        <!-- Formularz do dodawania postów -->
+        <!-- Post creation form -->
         <form asp-action="AddPost" method="post" class="post-form">
             <div class="form-group">
                 <textarea name="content" class="form-control" placeholder="What's on your mind?" required></textarea>
@@ -24,18 +24,116 @@
             <button type="submit">Post</button>
         </form>
 
-        <!-- Wyświetlanie postów -->
+        <!-- Displaying posts -->
         <h3>Recent Posts</h3>
         <ul class="list-group">
-            @foreach (var post in Model.OrderByDescending(p => p.CreatedDate))
+            @foreach (var postViewModel in Model.OrderByDescending(p => p.Post.CreatedDate))
             {
-                <li class="list-group-item">
-                    <strong>@post.Users.Nick</strong> (@post.CreatedDate.ToString("g"))
-                    <p>@post.Content</p>
-                    <p style="color: @(post.Prediction < 0.5 ? "green" : "red")">@post.Prediction</p>
+                var post = postViewModel.Post;  // Get the post
+                var userVote = postViewModel.UserVote;  // Get the logged-in user's vote for this post
+
+                <li class="list-group-item post-item">
+                    <div class="post-left">
+                        <strong>@post.Users?.Nick</strong> (@post.CreatedDate.ToString("g")) <!-- Display user's nickname and post date -->
+                        <p>@post.Content</p> <!-- Display the post content -->
+                        <p style="color: @(post.Prediction < 0.5 ? "green" : "red")">@post.Prediction</p> <!-- Display prediction with color -->
+                    </div>
+
+                    <div class="post-right">
+                        <!-- Voting buttons and vote counts on the right -->
+                        <p>Not Offensive: @post.NotOffensive</p> <!-- Display count for Not Offensive votes -->
+                        <p>Offensive: @post.Offensive</p> <!-- Display count for Offensive votes -->
+                        <!-- Voting buttons -->
+                        <button class="vote-btn"
+                                data-post-id="@post.Id"
+                                data-is-offensive="false"
+                        @(userVote != null && !userVote.IsOffensive ? "disabled" : "")>
+                            Not Offensive
+                        </button>
+                        <button class="vote-btn"
+                                data-post-id="@post.Id"
+                                data-is-offensive="true"
+                        @(userVote != null && userVote.IsOffensive ? "disabled" : "")>
+                            Offensive
+                        </button>
+                    </div>
                 </li>
             }
         </ul>
+        <style>
+            .post-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 15px;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .post-left {
+                flex: 2;
+                padding-right: 20px;
+            }
+
+            .post-right {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+            }
+
+                .post-right p {
+                    margin: 5px 0;
+                }
+
+            .vote-btn {
+                margin: 5px 0;
+                padding: 5px 10px;
+                background-color: #E9987D;
+                border: transparent;
+                cursor: pointer;
+            }
+
+                .vote-btn[disabled] {
+                    background-color: #c87458;
+                    cursor: not-allowed;
+                }
+
+                .vote-btn:not([disabled]):hover {
+                    background-color: #c87458;
+                    color: white;
+                }
+        </style>
+        <script>
+            document.querySelectorAll('.vote-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const postId = this.getAttribute('data-post-id');
+                    const isOffensive = this.getAttribute('data-is-offensive') === 'true';
+                    const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                    fetch('/Home/Vote', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ postId, isOffensive })
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                // Reload page to reflect the vote change
+                                location.reload();
+                            } else {
+                                response.text().then(message => {
+                                    alert(message || 'Something went wrong.');
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while submitting your vote.');
+                        });
+                });
+            });
+        </script>
     </div>
 </body>
 </html>

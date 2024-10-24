@@ -5,14 +5,22 @@ using Y_Platform.Entities;
 using Y_Platform.Models;
 using Microsoft.EntityFrameworkCore;
 using static Y_Platform.Models.AI_API_Client;
+using System.Security.Claims;
 
 namespace Y_Platform.Controllers
 {
+    // Klasa VoteRequest do obsługi danych z frontendu
+    //Do przeniesienia.
+    public class VoteRequest
+    {
+        public int PostId { get; set; }
+        public bool IsOffensive { get; set; }
+    }
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly ApplicationDbContext _context;
-        private static List<Post> posts = new List<Post>();
+        private static ApplicationDbContext _context;
+        private static List<Posts> posts = new List<Posts>();
 
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
@@ -33,6 +41,89 @@ namespace Y_Platform.Controllers
         {
             return HttpContext.Session.GetObject<Users>("LoggedUser");
         }
+
+        [HttpPost]
+        public IActionResult Vote([FromBody] VoteRequest voteRequest)
+        {
+            var loggedUser = getLoggedUser();
+            if (loggedUser == null)
+            {
+                return Unauthorized("You must be logged in to vote.");
+            }
+
+            // Znajdź użytkownika
+            var user = _context.Users
+                .FirstOrDefault(u => u.Id == loggedUser.Id);
+
+            if (user == null)
+            {
+                return Unauthorized("User not found.");
+            }
+
+            // Znajdź post
+            var post = _context.Posts
+                .Include(p => p.PostVotes)
+                .FirstOrDefault(p => p.Id == voteRequest.PostId);
+
+            if (post == null)
+            {
+                return NotFound("Post not found.");
+            }
+
+            // Sprawdź, czy użytkownik już głosował
+            var existingVote = _context.PostVotes
+                .FirstOrDefault(v => v.Post.Id == voteRequest.PostId && v.User.Id == user.Id);
+
+            if (existingVote != null)
+            {
+                // Jeśli użytkownik chce zmienić głos
+                if (existingVote.IsOffensive != voteRequest.IsOffensive)
+                {
+                    // Zaktualizuj licznik głosów w poście
+                    if (existingVote.IsOffensive)
+                    {
+                        post.Offensive -= 1;  // Usuń stary głos z "Offensive"
+                        post.NotOffensive += 1; // Dodaj nowy głos do "Not Offensive"
+                    }
+                    else
+                    {
+                        post.NotOffensive -= 1; // Usuń stary głos z "Not Offensive"
+                        post.Offensive += 1; // Dodaj nowy głos do "Offensive"
+                    }
+
+                    // Zaktualizuj głos użytkownika
+                    existingVote.IsOffensive = voteRequest.IsOffensive;
+                }
+            }
+            else
+            {
+                // Użytkownik jeszcze nie głosował, więc dodajemy głos
+                var vote = new PostVotes
+                {
+                    User = user,
+                    Post = post,
+                    IsOffensive = voteRequest.IsOffensive
+                };
+
+                _context.PostVotes.Add(vote);
+
+                // Zaktualizuj licznik głosów w poście
+                if (voteRequest.IsOffensive)
+                {
+                    post.Offensive += 1;
+                }
+                else
+                {
+                    post.NotOffensive += 1;
+                }
+            }
+
+            _context.SaveChanges();
+
+            LoadPostsFromDatabase();
+
+            return Ok("Your vote has been submitted.");
+        }
         public IActionResult Index()
         {
             var loggedUser = getLoggedUser();
@@ -41,9 +132,24 @@ namespace Y_Platform.Controllers
                 // Przekierowanie do strony logowania, jeśli użytkownik nie jest zalogowany
                 return RedirectToAction("Login");
             }
+            // Pobierz aktualnego użytkownika (zakładam, że jesteś zalogowany)
+            var currentUserId = loggedUser.Id;  // ID aktualnie zalogowanego użytkownika
 
-            // Pobierz wszystkie posty i przekaż do widoku
-            return View(posts);
+            // Pobierz posty z bazy danych
+            var posts = _context.Posts
+                .Include(p => p.Users)        // Include the user who created the post
+                .Include(p => p.PostVotes)    // Include the votes related to the post
+                .ToList();
+
+            // Map the posts to PostViewModel, including the user's vote
+            var postViewModels = posts.Select(post => new PostViewModel
+            {
+                Post = post,
+                UserVote = post.PostVotes.FirstOrDefault(v => v.User.Id == currentUserId)  // Get the logged-in user's vote for each post
+            }).ToList();
+
+            // Pass the PostViewModel list to the view
+            return View(postViewModels);
         }
         [HttpPost]
         public async Task<IActionResult> AddPost(string content)
@@ -57,7 +163,7 @@ namespace Y_Platform.Controllers
             var u = _context.Users
                 .FirstOrDefault(u => u.Nick == loggedUser.Nick && u.Password == loggedUser.Password);
             var creationDate = DateTime.Now;
-            var newPost = new Post
+            var newPost = new Posts
             {
                 Content = content,
                 CreatedDate = creationDate,
@@ -69,14 +175,15 @@ namespace Y_Platform.Controllers
             _context.Posts.Add(newPost);
             _context.SaveChanges();
 
+            LoadPostsFromDatabase();
+
             // Przekieruj na stronę główną po dodaniu posta
             return RedirectToAction("Index");
         }
-
         static async Task<float?> getPredict(int user_id, string user_name, string content, DateTime creationDate)
         {
             // Tworzymy nowego klienta dla API
-            var api = new AI_API_Client("http://127.0.0.1:8000");
+            var api = new AI_API_Client("http://127.0.0.1:8000", _context);
             string apiKey = "b390facc-6191-41a9-ada7-bb4f022e9153";
             try
             {
@@ -111,7 +218,6 @@ namespace Y_Platform.Controllers
 
 
 
-
         public IActionResult Privacy()
         {
             return View(getLoggedUser());
@@ -135,7 +241,7 @@ namespace Y_Platform.Controllers
                 loggedUser.Id = u.Id;
                 loggedUser.Login = u.Login;
                 HttpContext.Session.SetObject("LoggedUser", loggedUser);
-                return View("Index", posts);
+                return RedirectToAction("Index");
 
             }
             else
@@ -189,7 +295,7 @@ namespace Y_Platform.Controllers
                     HttpContext.Session.SetObject("LoggedUser", newUser);
 
                     // Przekierowanie do widoku "Index" z zalogowanym użytkownikiem
-                    return View("Index", posts);
+                    return RedirectToAction("Index");
                 }
             }
             catch (Exception ex)
