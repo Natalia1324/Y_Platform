@@ -4,6 +4,9 @@ namespace Y_Platform.Entities
 {
     public class ApplicationDbContext : DbContext
     {
+        /// <summary>
+        /// Kontekst bazy danych
+        /// </summary>
         public DbSet<Posts> Posts { get; set; }
         public DbSet<Users> Users { get; set; }
         public DbSet<PostVotes> PostVotes { get; set; }
@@ -14,23 +17,27 @@ namespace Y_Platform.Entities
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            ///<summary>
+            /// Wyznaczanie relacji między tabelami
+            /// </summary>
+            
             // Relacja PostVotes -> Posts
             modelBuilder.Entity<PostVotes>()
                 .HasOne(pv => pv.Post)
                 .WithMany(p => p.PostVotes)
-                .OnDelete(DeleteBehavior.Restrict);  // Kaskadowe usuwanie głosów przy usunięciu posta
+                .OnDelete(DeleteBehavior.Cascade); 
 
             // Relacja Users -> Posts
             modelBuilder.Entity<Users>()
                 .HasMany(u => u.Posts)
                 .WithOne(p => p.Users)
-                .OnDelete(DeleteBehavior.Restrict);  // Kaskadowe usuwanie postów przy usunięciu użytkownika
+                .OnDelete(DeleteBehavior.Cascade); 
 
             // Relacja PostVotes -> Users
             modelBuilder.Entity<PostVotes>()
                 .HasOne(pv => pv.User)
                 .WithMany(u => u.PostVotes)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.NoAction);
 
             base.OnModelCreating(modelBuilder);
         }

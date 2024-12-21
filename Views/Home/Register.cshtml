@@ -26,16 +26,14 @@
                     @* @Html.TextBoxFor(model => model.Nick, new { @placeholder = "Nick", @required = "required" }) *@
                     @Html.TextBoxFor(model => model.Nick, new { @placeholder = "Nick", @required = "required", @minlength = "8", @maxlength = "20" })
 
-                    <!--<label for="nick">Nick</label>-->
                 </div>
                 <br>
                 <div class="form-field">
-                    @Html.TextBoxFor(model => model.Login, new { @placeholder = "Email", @required = "required", @pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}" })
+                    @Html.TextBoxFor(model => model.Email, new { @placeholder = "Email", @required = "required", @pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}" })
 
 
 
                     @* @Html.TextBoxFor(model => model.Login, new { @placeholder = "Email", @required = "required" }) *@
-                    <!--<label for="email">Email</label>-->
                 </div>
                 <br>
                 <div class="form-field">
@@ -45,7 +43,6 @@
 
 
                     @* @Html.PasswordFor(model => model.Password, new { @placeholder = "Password", @required = "required" }) *@
-                    <!--<label for="password">Password</label>-->
                 </div>
                 <br>
                 <button type="submit">Sign Up</button>

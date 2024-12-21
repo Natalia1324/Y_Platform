@@ -2,12 +2,13 @@
 {
     public class Posts
     {
+        /// <summary>
+        /// Klasa reprezentująca tabele postów
+        /// </summary>
         public int Id { get; set; }
         public string Content { get; set; }
         public DateTime CreatedDate { get; set; }
         public float? Prediction {  get; set; }
-        public int NotOffensive { get; set; } = 0;
-        public int Offensive { get; set; } = 0;
 
         //references
         public required Users Users { get; set; }

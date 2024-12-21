@@ -16,7 +16,6 @@
     <div class="content-wrapper">
         <h2>Welcome to Y</h2>
 
-        <!-- Post creation form -->
         <form asp-action="AddPost" method="post" class="post-form">
             <div class="form-group">
                 <textarea name="content" class="form-control" placeholder="What's on your mind?" required></textarea>
@@ -24,26 +23,23 @@
             <button type="submit">Post</button>
         </form>
 
-        <!-- Displaying posts -->
         <h3>Recent Posts</h3>
         <ul class="list-group">
             @foreach (var postViewModel in Model.OrderByDescending(p => p.Post.CreatedDate))
             {
-                var post = postViewModel.Post;  // Get the post
-                var userVote = postViewModel.UserVote;  // Get the logged-in user's vote for this post
+                var post = postViewModel.Post;
+                var userVote = postViewModel.UserVote;
 
                 <li class="list-group-item post-item">
                     <div class="post-left">
-                        <strong>@post.Users?.Nick</strong> (@post.CreatedDate.ToString("g")) <!-- Display user's nickname and post date -->
-                        <p>@post.Content</p> <!-- Display the post content -->
-                        <p style="color: @(post.Prediction < 0.5 ? "green" : "red")">@post.Prediction</p> <!-- Display prediction with color -->
+                        <strong>@post.Users?.Nick</strong> (@post.CreatedDate.ToString("g"))
+                        <p>@post.Content</p>
+                        <p style="color: @(post.Prediction < 0.5 ? "green" : "red")">@post.Prediction</p>
                     </div>
 
                     <div class="post-right">
-                        <!-- Voting buttons and vote counts on the right -->
-                        <p>Not Offensive: @post.NotOffensive</p> <!-- Display count for Not Offensive votes -->
-                        <p>Offensive: @post.Offensive</p> <!-- Display count for Offensive votes -->
-                        <!-- Voting buttons -->
+                        <p>Not Offensive: @postViewModel.NotOffensiveVotes</p>
+                        <p>Offensive: @postViewModel.OffensiveVotes</p>
                         <button class="vote-btn"
                                 data-post-id="@post.Id"
                                 data-is-offensive="false"
@@ -119,7 +115,6 @@
                     })
                         .then(response => {
                             if (response.ok) {
-                                // Reload page to reflect the vote change
                                 location.reload();
                             } else {
                                 response.text().then(message => {

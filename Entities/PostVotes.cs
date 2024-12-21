@@ -2,8 +2,11 @@
 {
     public class PostVotes
     {
+        /// <summary>
+        /// Klasa reprezentująca głosy oddane na posty
+        /// </summary>
         public int Id { get; set; }
-        public bool IsOffensive { get; set; } // True if the user voted that the post is offensive
+        public bool IsOffensive { get; set; }
 
         // References
         public required Posts Post { get; set; }

@@ -6,11 +6,16 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using Y_Platform.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using static Y_Platform.Models.AI_API_Client;
 
 namespace Y_Platform.Models
 {
     public class AI_API_Client
     {
+        /// <summary>
+        /// Klasa umożliwiająca korzystanie z funkcji API 
+        /// </summary>
         private static readonly HttpClient client = new HttpClient();
         private readonly string apiUrl;
         private ApplicationDbContext _context;
@@ -21,39 +26,77 @@ namespace Y_Platform.Models
             this._context = _context;
         }
 
-        // Klasa do danych wejściowych
+        public class InputUserAggression
+        {
+            /// <summary>
+            /// Klasa reprezentująca dane wejściowe funkcji /usersbyvalue
+            /// </summary>
+            public string apiKey { get; set; }
+        }
         public class InputDataToPrediction
         {
+            /// <summary>
+            /// Klasa reprezentująca dane wejściowe funkcji /predict
+            /// </summary>
             public int User_ID { get; set; }
             public string User_Name { get; set; }
             public string Content { get; set; }
             public DateTime CreatedDate { get; set; }
-            public string apiKey { get; set; }  // Klucz autoryzacyjny
+            public string apiKey { get; set; }
         }
         public class PostDataToLearning
         {
-            public int Id { get; set; }
+            /// <summary>
+            /// Klasa reprezentująca dane wejściowe funkcji /learn
+            /// </summary>
+            public int User_ID { get; set; }
+            public string User_Name { get; set; }
             public string Content { get; set; }
             public DateTime CreatedDate { get; set; }
-            public float? Prediction { get; set; }
             public int NotOffensive { get; set; }
             public int Offensive { get; set; }
-            public int UserId { get; set; }  // Przesyłamy tylko ID użytkownika
+            public string apiKey { get; set; }
+
         }
         public class Prediction
         {
-            public string text { get; set; }         // Tekst
-            public int classification { get; set; }  // Klasyfikacja
-            public float predictionValue { get; set; } // Wartość predykcji
+            /// <summary>
+            /// Klasa reprezentująca encje PredictionResponse
+            /// </summary>
+            public string text { get; set; }        
+            public int classification { get; set; }  
+            public float predictionValue { get; set; } 
         }
         public class PredictionResponse
         {
+            /// <summary>
+            /// Klasa reprezentująca odpowiedź funkcji /predict
+            /// </summary>
             public List<List<object>> predictions { get; set; }
             public string message { get; set; }  // Informacja zwrotna od API (czy zapisano post)
         }
         public class ErrorResponse
         {
+            /// <summary>
+            /// Klasa reprezentująca odpowiedź błędu
+            /// </summary>
             public string Detail { get; set; }
+        }
+        public class UserData
+        {
+            /// <summary>
+            /// Klasa reprezentująca pojedyńczą encje danych użytkownika
+            /// </summary>
+            public int Id { get; set; }
+            public string Nick { get; set; }
+        }
+        public class UserResponse
+        {
+            /// <summary>
+            /// Klasa reprezentująca odpowiedź funkcji /usersbyvalue
+            /// </summary>
+            public List<List<object>> userData { get; set; }
+            public string message { get; set; }
         }
 
         public async Task<List<Prediction>> GetPrediction(int userId, string userName, string content, DateTime createdDate, string apiKey)
@@ -107,11 +150,9 @@ namespace Y_Platform.Models
                 }
                 else
                 {
-                    // Wyświetlenie surowej odpowiedzi API w przypadku błędu
                     var errorMessage = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Raw API error response: {errorMessage}");
 
-                    // Deserializacja błędu
                     try
                     {
                         var errorDetail = JsonConvert.DeserializeObject<ErrorResponse>(errorMessage);
@@ -119,7 +160,6 @@ namespace Y_Platform.Models
                     }
                     catch (JsonException)
                     {
-                        // Jeśli nie udało się zdeserializować, wyświetlamy surowy błąd
                         throw new HttpRequestException($"API request failed with status {response.StatusCode}: {errorMessage}");
                     }
                 }
@@ -148,18 +188,23 @@ namespace Y_Platform.Models
 
                 foreach (var post in posts)
                 {
+                    // Obliczamy liczbę głosów na podstawie tabeli PostVotes
+                    var offensiveVotes = _context.PostVotes.Count(v => v.Post.Id == post.Id && v.IsOffensive);
+                    var notOffensiveVotes = _context.PostVotes.Count(v => v.Post.Id == post.Id && !v.IsOffensive);
+
                     var postData = new PostDataToLearning
                     {
-                        Id = post.Id,
+                        User_ID = post.Users.Id, // Przesyłamy ID użytkownika
+                        User_Name = post.Users.Nick,
                         Content = post.Content,
                         CreatedDate = post.CreatedDate,
-                        Prediction = post.Prediction,
-                        NotOffensive = post.NotOffensive,
-                        Offensive = post.Offensive,
-                        UserId = post.Users.Id  // Przesyłamy ID użytkownika
+                        NotOffensive = notOffensiveVotes, // Liczba głosów "Not Offensive"
+                        Offensive = offensiveVotes,       // Liczba głosów "Offensive"
+                        apiKey = apiKey,
                     };
 
                     var jsonContent = JsonConvert.SerializeObject(postData);
+
                     var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
                     // Wyślij dane do API
@@ -182,7 +227,68 @@ namespace Y_Platform.Models
                 throw;
             }
         }
-    }
 
-}
+        public async Task<List<UserData>> GetMostAgressiveUsersByTimeAndValue(string apiKey)
+        {
+            try
+            {
+                var inputdata = new InputUserAggression
+                {
+                    apiKey = apiKey,
+                };
+                var jsonContent = JsonConvert.SerializeObject(inputdata);
+
+                var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                // Wyślij dane do API
+                var response = await client.PostAsync($"{apiUrl}/usersbyvalue", httpContent);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var userResponse = JsonConvert.DeserializeObject<UserResponse>(responseContent);
+
+                    var users = new List<UserData>();
+                    if (userResponse != null)
+                    {
+                        foreach (var user in userResponse.userData)
+                        {
+                            if (user.Count == 2)
+                            {
+                                var user1 = new UserData
+                                {
+                                    Id = Convert.ToInt32(user[0]),
+                                    Nick = user[1].ToString(),
+                                };
+
+                                users.Add(user1);
+                            }
+                        }
+                        foreach (var user in users)
+                        {
+                            Console.WriteLine(user.Id);
+                            Console.WriteLine(user.Nick);
+                        }
+                        
+                    }
+                    return users;
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Failed to retrieve. Error: {errorMessage}");
+                }
+                return [];
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                throw;
+            }
+        }
+
+    
+    }
+ }
 

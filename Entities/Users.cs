@@ -7,9 +7,12 @@ namespace Y_Platform.Entities
 {
     public class Users
     {
+        /// <summary>
+        /// Klasa reprezentująca tabele użytkowników
+        /// </summary>
         public int Id { get; set; }
         public required string Nick { get; set; }
-        public required string Login { get; set; }
+        public required string Email { get; set; }
         public required string Password { get; set; }
 
         // References

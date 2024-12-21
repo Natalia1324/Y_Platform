@@ -39,16 +39,15 @@
             error.style.display = 'block';
             setTimeout(function () {
                 error.style.display = 'none';
-            }, 9999); // Ukryj błąd
+            }, 9999); 
         }
 
-        // Wywołanie funkcji na początku, aby wyczyścić błąd po załadowaniu strony
         document.addEventListener('DOMContentLoaded', function () {
             var error = document.querySelector('.error-message');
             if (error) {
                 setTimeout(function () {
                     error.style.display = 'none';
-                }, 9999); // Ukryj błąd
+                }, 9999); 
             }
         });
 
