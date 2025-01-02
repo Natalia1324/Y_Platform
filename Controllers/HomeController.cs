@@ -8,7 +8,7 @@ using static Y_Platform.Models.AI_API_Client;
 using System.Security.Claims;
 
 namespace Y_Platform.Controllers
-{ 
+{
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -124,8 +124,8 @@ namespace Y_Platform.Controllers
             {
                 Post = post,
                 UserVote = post.PostVotes.FirstOrDefault(v => v.User.Id == currentUserId),
-                OffensiveVotes = post.PostVotes.Count(v => v.IsOffensive),                 
-                NotOffensiveVotes = post.PostVotes.Count(v => !v.IsOffensive)             
+                OffensiveVotes = post.PostVotes.Count(v => v.IsOffensive),
+                NotOffensiveVotes = post.PostVotes.Count(v => !v.IsOffensive)
             }).ToList();
 
             return View(postViewModels);
@@ -139,7 +139,7 @@ namespace Y_Platform.Controllers
             /// </summary>
             /// <param name="content"> Treść posta </param>
             /// <returns> Odpowiedni widok </returns>
-            
+
             var loggedUser = getLoggedUser();
             if (loggedUser == null)
             {
@@ -174,12 +174,12 @@ namespace Y_Platform.Controllers
             /// <param name="content"> Treść posta </param>
             /// <param name="creationDate"> Data opublikowania posta </param>
             /// <returns> Wartość obraźliwości posta lub null w przypadku błędu </returns>
-            
+
             var api = new AI_API_Client("http://127.0.0.1:8000", _context);
             string apiKey = "bf2dcaf1-8118-45ae-8466-327f52bed797";
             try
             {
-                await api.SendLearningData(apiKey);
+                //await api.SendLearningData(apiKey);
                 var predictions = await api.GetPrediction(user_id, user_name, content, creationDate, apiKey);
                 Console.WriteLine("Prediction:");
                 if (predictions != null && predictions.Count > 0)
@@ -202,14 +202,7 @@ namespace Y_Platform.Controllers
             }
             return null;
         }
-
-        public IActionResult Privacy()
-        {
-            ///<summary>
-            /// Widok Privacy
-            /// </summary>
-            return View(getLoggedUser());
-        }
+    
         public IActionResult Login()
         {
             ///<summary>

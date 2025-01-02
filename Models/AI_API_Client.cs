@@ -73,7 +73,7 @@ namespace Y_Platform.Models
             /// Klasa reprezentująca odpowiedź funkcji /predict
             /// </summary>
             public List<List<object>> predictions { get; set; }
-            public string message { get; set; }  // Informacja zwrotna od API (czy zapisano post)
+            public string message { get; set; }
         }
         public class ErrorResponse
         {
@@ -99,196 +99,203 @@ namespace Y_Platform.Models
             public string message { get; set; }
         }
 
-        public async Task<List<Prediction>> GetPrediction(int userId, string userName, string content, DateTime createdDate, string apiKey)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-                throw new ArgumentException("Content cannot be empty", nameof(content));
-
-            if (string.IsNullOrWhiteSpace(apiKey))
-                throw new ArgumentException("API key cannot be empty", nameof(apiKey));
-
-            var input = new InputDataToPrediction
+            /// <summary>
+            /// Pobiera predykcję dotyczące treści wpisu na podstawie danych użytkownika i zawartości wpisu.
+            /// </summary>
+            /// <param name="userId">ID użytkownika</param>
+            /// <param name="userName">Nazwa użytkownika</param>
+            /// <param name="content">Treść wpisu</param>
+            /// <param name="createdDate">Data utworzenia wpisu</param>
+            /// <param name="apiKey">Klucz API</param>
+            /// <returns>Lista predykcji dotyczących wpisu</returns>
+            public async Task<List<Prediction>> GetPrediction(int userId, string userName, string content, DateTime createdDate, string apiKey)
             {
-                User_ID = userId,
-                User_Name = userName,
-                Content = content,
-                CreatedDate = createdDate,
-                apiKey = apiKey
-            };
+                if (string.IsNullOrWhiteSpace(content))
+                    throw new ArgumentException("Treść nie może być pusta", nameof(content));
 
-            var jsonContent = JsonConvert.SerializeObject(input);
-            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    throw new ArgumentException("Klucz API nie może być pusty", nameof(apiKey));
 
-            try
-            {
-                // Wysłanie żądania POST do API
-                var response = await client.PostAsync($"{apiUrl}/predict", httpContent);
-
-                if (response.IsSuccessStatusCode)
+                var input = new InputDataToPrediction
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var predictionResponse = JsonConvert.DeserializeObject<PredictionResponse>(responseContent);
+                    User_ID = userId,
+                    User_Name = userName,
+                    Content = content,
+                    CreatedDate = createdDate,
+                    apiKey = apiKey
+                };
 
-                    var predictions = new List<Prediction>();
-                    foreach (var pred in predictionResponse.predictions)
-                    {
-                        if (pred.Count == 3)
-                        {
-                            var prediction = new Prediction
-                            {
-                                text = pred[0].ToString(),
-                                classification = Convert.ToInt32(pred[1]),
-                                predictionValue = Convert.ToSingle(pred[2])
-                            };
-                            predictions.Add(prediction);
-                        }
-                    }
+                var jsonContent = JsonConvert.SerializeObject(input);
+                var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                    Console.WriteLine($"Message from API: {predictionResponse.message}");  // Wyświetlamy wiadomość zwrotną od API
-
-                    return predictions;
-                }
-                else
+                try
                 {
-                    var errorMessage = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Raw API error response: {errorMessage}");
-
-                    try
-                    {
-                        var errorDetail = JsonConvert.DeserializeObject<ErrorResponse>(errorMessage);
-                        throw new HttpRequestException($"API request failed with status {response.StatusCode}: {errorDetail.Detail}");
-                    }
-                    catch (JsonException)
-                    {
-                        throw new HttpRequestException($"API request failed with status {response.StatusCode}: {errorMessage}");
-                    }
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine($"Request error: {ex.Message}");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                throw;
-            }
-        }
-
-
-        public async Task SendLearningData(string apiKey)
-        {
-            try
-            {
-                // Pobierz wszystkie posty z bazy danych
-                var posts = await _context.Posts
-                    .Include(p => p.Users)  // Include, aby mieć dostęp do UserId
-                    .ToListAsync();
-
-                foreach (var post in posts)
-                {
-                    // Obliczamy liczbę głosów na podstawie tabeli PostVotes
-                    var offensiveVotes = _context.PostVotes.Count(v => v.Post.Id == post.Id && v.IsOffensive);
-                    var notOffensiveVotes = _context.PostVotes.Count(v => v.Post.Id == post.Id && !v.IsOffensive);
-
-                    var postData = new PostDataToLearning
-                    {
-                        User_ID = post.Users.Id, // Przesyłamy ID użytkownika
-                        User_Name = post.Users.Nick,
-                        Content = post.Content,
-                        CreatedDate = post.CreatedDate,
-                        NotOffensive = notOffensiveVotes, // Liczba głosów "Not Offensive"
-                        Offensive = offensiveVotes,       // Liczba głosów "Offensive"
-                        apiKey = apiKey,
-                    };
-
-                    var jsonContent = JsonConvert.SerializeObject(postData);
-
-                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                    // Wyślij dane do API
-                    var response = await client.PostAsync($"{apiUrl}/learn", httpContent);
+                    var response = await client.PostAsync($"{apiUrl}/predict", httpContent);
 
                     if (response.IsSuccessStatusCode)
                     {
-                        Console.WriteLine($"Post {post.Id} sent successfully.");
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        var predictionResponse = JsonConvert.DeserializeObject<PredictionResponse>(responseContent);
+
+                        var predictions = new List<Prediction>();
+                        foreach (var pred in predictionResponse.predictions)
+                        {
+                            if (pred.Count == 3)
+                            {
+                                var prediction = new Prediction
+                                {
+                                    text = pred[0].ToString(),
+                                    classification = Convert.ToInt32(pred[1]),
+                                    predictionValue = Convert.ToSingle(pred[2])
+                                };
+                                predictions.Add(prediction);
+                            }
+                        }
+
+                        Console.WriteLine($"Komunikat API: {predictionResponse.message}");
+                        return predictions;
                     }
                     else
                     {
                         var errorMessage = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine($"Failed to send post {post.Id}. Error: {errorMessage}");
+                        Console.WriteLine($"Niepowodzenie API: {errorMessage}");
+
+                        try
+                        {
+                            var errorDetail = JsonConvert.DeserializeObject<ErrorResponse>(errorMessage);
+                            throw new HttpRequestException($"Żądanie API nie powiodło się z kodem statusu {response.StatusCode}: {errorDetail.Detail}");
+                        }
+                        catch (JsonException)
+                        {
+                            throw new HttpRequestException($"Żądanie API nie powiodło się z kodem statusu {response.StatusCode}: {errorMessage}");
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                throw;
-            }
-        }
-
-        public async Task<List<UserData>> GetMostAgressiveUsersByTimeAndValue(string apiKey)
-        {
-            try
-            {
-                var inputdata = new InputUserAggression
+                catch (HttpRequestException ex)
                 {
-                    apiKey = apiKey,
-                };
-                var jsonContent = JsonConvert.SerializeObject(inputdata);
-
-                var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                // Wyślij dane do API
-                var response = await client.PostAsync($"{apiUrl}/usersbyvalue", httpContent);
-                
-                if (response.IsSuccessStatusCode)
+                    Console.WriteLine($"Błąd żądania HTTP: {ex.Message}");
+                    throw;
+                }
+                catch (Exception ex)
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var userResponse = JsonConvert.DeserializeObject<UserResponse>(responseContent);
+                    Console.WriteLine($"Nieoczekiwany błąd: {ex.Message}");
+                    throw;
+                }
+            }
 
-                    var users = new List<UserData>();
-                    if (userResponse != null)
+            /// <summary>
+            /// Wysyła dane uczące do zewnętrznego API na podstawie zgromadzonych danych o postach i głosach użytkowników.
+            /// </summary>
+            /// <param name="apiKey">Klucz API</param>
+            public async Task SendLearningData(string apiKey)
+            {
+                try
+                {
+                    var posts = await _context.Posts
+                        .Include(p => p.Users)
+                        .ToListAsync();
+
+                    foreach (var post in posts)
                     {
-                        foreach (var user in userResponse.userData)
-                        {
-                            if (user.Count == 2)
-                            {
-                                var user1 = new UserData
-                                {
-                                    Id = Convert.ToInt32(user[0]),
-                                    Nick = user[1].ToString(),
-                                };
+                        var offensiveVotes = _context.PostVotes.Count(v => v.Post.Id == post.Id && v.IsOffensive);
+                        var notOffensiveVotes = _context.PostVotes.Count(v => v.Post.Id == post.Id && !v.IsOffensive);
 
-                                users.Add(user1);
-                            }
-                        }
-                        foreach (var user in users)
+                        var postData = new PostDataToLearning
                         {
-                            Console.WriteLine(user.Id);
-                            Console.WriteLine(user.Nick);
+                            User_ID = post.Users.Id,
+                            User_Name = post.Users.Nick,
+                            Content = post.Content,
+                            CreatedDate = post.CreatedDate,
+                            NotOffensive = notOffensiveVotes,
+                            Offensive = offensiveVotes,
+                            apiKey = apiKey,
+                        };
+
+                        var jsonContent = JsonConvert.SerializeObject(postData);
+                        var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                        var response = await client.PostAsync($"{apiUrl}/learn", httpContent);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            Console.WriteLine($"Post {post.Id} został pomyślnie wysłany.");
                         }
-                        
+                        else
+                        {
+                            var errorMessage = await response.Content.ReadAsStringAsync();
+                            Console.WriteLine($"Nie udało się wysłać postu {post.Id}. Błąd: {errorMessage}");
+                        }
                     }
-                    return users;
                 }
-                else
+                catch (Exception ex)
                 {
-                    var errorMessage = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Failed to retrieve. Error: {errorMessage}");
+                    Console.WriteLine($"Wystąpił błąd: {ex.Message}");
+                    throw;
                 }
-                return [];
-
             }
-            catch (Exception ex)
+
+            /// <summary>
+            /// Pobiera listę najbardziej agresywnych użytkowników na podstawie danych z API.
+            /// </summary>
+            /// <param name="apiKey">Klucz API</param>
+            /// <returns>Lista danych użytkowników</returns>
+            public async Task<List<UserData>> GetMostAggressiveUsers(string apiKey)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                throw;
+                try
+                {
+                    var inputdata = new InputUserAggression
+                    {
+                        apiKey = apiKey,
+                    };
+                    var jsonContent = JsonConvert.SerializeObject(inputdata);
+
+                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync($"{apiUrl}/usersbyvalue", httpContent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        var userResponse = JsonConvert.DeserializeObject<UserResponse>(responseContent);
+
+                        var users = new List<UserData>();
+                        if (userResponse != null)
+                        {
+                            foreach (var user in userResponse.userData)
+                            {
+                                if (user.Count == 2)
+                                {
+                                    var user1 = new UserData
+                                    {
+                                        Id = Convert.ToInt32(user[0]),
+                                        Nick = user[1].ToString(),
+                                    };
+
+                                    users.Add(user1);
+                                }
+                            }
+                            foreach (var user in users)
+                            {
+                                Console.WriteLine($"ID: {user.Id}, Nick: {user.Nick}");
+                            }
+
+                        }
+                        return users;
+                    }
+                    else
+                    {
+                        var errorMessage = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"Nie udało się pobrać danych użytkowników. Błąd: {errorMessage}");
+                    }
+                    return new List<UserData>();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Wystąpił błąd: {ex.Message}");
+                    throw;
+                }
             }
         }
-
-    
     }
- }
+
 
