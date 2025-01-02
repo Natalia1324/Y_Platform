@@ -14,7 +14,7 @@ namespace Y_Platform.Controllers
         private readonly ILogger<HomeController> _logger;
         private static ApplicationDbContext _context;
         private static List<Posts> posts = new List<Posts>();
-
+        private static string apiKey = "bf2dcaf1-8118-45ae-8466-327f52bed797";
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
             _logger = logger;
@@ -176,7 +176,7 @@ namespace Y_Platform.Controllers
             /// <returns> Wartość obraźliwości posta lub null w przypadku błędu </returns>
 
             var api = new AI_API_Client("http://127.0.0.1:8000", _context);
-            string apiKey = "bf2dcaf1-8118-45ae-8466-327f52bed797";
+            
             try
             {
                 //await api.SendLearningData(apiKey);
